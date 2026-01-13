@@ -11,14 +11,15 @@
 *{ box-sizing:border-box; }
 
 :root{
-  --bg:#071821;
-  --panel:#06131a;
+  /* ✅ APP 開始：藍色（掃描中也同一個藍） */
+  --bg:#061521;
+  --panel:#04111a;
   --text:#e8fbff;
   --muted:rgba(232,251,255,.72);
 
-  --accent:#60d7ff;
-  --accentText:#002733;
-  --glow:rgba(96,215,255,.30);
+  --accent:#60d7ff;        /* 藍 */
+  --accentText:#001f2b;
+  --glow:rgba(96,215,255,.26);
   --grid:rgba(232,251,255,.05);
 }
 
@@ -61,11 +62,36 @@ body::after{
   pointer-events:none;
 }
 
-/* 四種主題（疲累） */
-.theme-green{  --bg:#061a12; --panel:#04140d; --accent:#4ff3a6; --accentText:#002b19; --glow:rgba(79,243,166,.28); }
-.theme-blue{   --bg:#061521; --panel:#04111a; --accent:#60d7ff; --accentText:#001f2b; --glow:rgba(96,215,255,.28); }
-.theme-orange{ --bg:#1a1206; --panel:#140f04; --accent:#ffb35a; --accentText:#2b1400; --glow:rgba(255,179,90,.28); }
-.theme-red{    --bg:#1b0707; --panel:#140505; --accent:#ff5b5b; --accentText:#2b0000; --glow:rgba(255,91,91,.28); }
+/* 結果主題：綠/紫/橘/莓紅（藍區改紫） */
+.theme-green{
+  --bg:#061a12; --panel:#04140d;
+  --accent:#4ff3a6; --accentText:#002b19;
+  --glow:rgba(79,243,166,.24);
+}
+.theme-blue{
+  /* ✅ 仍保留藍（當作待機/掃描色） */
+  --bg:#061521; --panel:#04111a;
+  --accent:#60d7ff; --accentText:#001f2b;
+  --glow:rgba(96,215,255,.26);
+}
+.theme-purple{
+  /* ✅ 藍色區位改紫（左二：有點累但還行） */
+  --bg:#0f0720; --panel:#0b0517;
+  --accent:#b783ff; --accentText:#1b0033;
+  --glow:rgba(183,131,255,.26);
+  --grid:rgba(232,251,255,.04);
+}
+.theme-orange{
+  --bg:#16100a; --panel:#120c06;
+  --accent:#ffb35a; --accentText:#2b1400;
+  --glow:rgba(255,179,90,.20);
+}
+.theme-red{
+  /* ✅ 柔莓紅 / 酒紅 */
+  --bg:#16070c; --panel:#120509;
+  --accent:#ff6b88; --accentText:#2b0010;
+  --glow:rgba(255,107,136,.20);
+}
 
 header{
   padding:16px 10px 10px;
@@ -104,6 +130,7 @@ header{
   transition:border-color .25s ease;
 }
 
+/* 角落框線 */
 #scannerCorners{
   position:absolute;
   inset:12px;
@@ -121,40 +148,25 @@ header{
 #scannerCorners::before{ left:8px; top:8px; border-right:none; border-bottom:none; }
 #scannerCorners::after{ right:8px; bottom:8px; border-left:none; border-top:none; }
 
-/* 中央圖形 */
-#core{
+/* ✅ 中央：虛線對準框（不要手掌） */
+#targetBox{
   position:absolute;
-  top:108px; left:50%;
+  top:122px;
+  left:50%;
   transform:translateX(-50%);
-  width:220px; height:140px;
-  border-radius:28px;
-  border:1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.20);
-  overflow:hidden;
+  width:240px;
+  height:170px;
+  border-radius:22px;
+  border:2px dashed rgba(232,251,255,0.26);
+  background: rgba(0,0,0,0.18);
+  box-shadow: inset 0 0 18px rgba(255,255,255,0.03);
 }
-#core::before{
+#targetBox::before{
   content:"";
-  position:absolute; inset:-40px;
+  position:absolute;
+  inset:-40px;
   background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.08), transparent 55%);
   pointer-events:none;
-}
-#eye{
-  position:absolute;
-  left:50%; top:50%;
-  transform:translate(-50%,-50%);
-  width:150px; height:70px;
-  border-radius:999px;
-  border:2px dashed rgba(232,251,255,0.26);
-}
-#pupil{
-  position:absolute;
-  left:50%; top:50%;
-  transform:translate(-50%,-50%);
-  width:30px; height:30px;
-  border-radius:50%;
-  background: color-mix(in oklab, var(--accent) 35%, transparent);
-  filter: drop-shadow(0 0 18px var(--glow));
-  transition: transform .25s ease;
 }
 
 /* 疲勞能量槽 */
@@ -204,22 +216,46 @@ header{
   50%{ transform: translateX(6%); opacity:.75; }
 }
 
-/* 掃描線 */
-#scanline{
+/* ✅ 兩條直線掃描：慢速「中→外→中→外」(整段掃描期間只做這個) */
+#scanLines{
   position:absolute;
-  top:-60px; left:0;
-  width:100%; height:38px;
-  background:linear-gradient(to bottom, transparent, color-mix(in oklab, var(--accent) 92%, white 8%), transparent);
+  inset:0;
+  pointer-events:none;
   opacity:0;
-  filter: blur(.2px);
 }
-.scanning #scanline{
-  opacity:1;
-  animation:scan linear;
+.scanLine{
+  position:absolute;
+  top:-50px;
+  height:700px;   /* 超過滿屏確保滿長度 */
+  width:3px;
+  border-radius:999px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--accent) 92%, white 8%),
+    transparent
+  );
+  box-shadow: 0 0 18px var(--glow);
+  opacity:.95;
+  filter: blur(.15px);
 }
-@keyframes scan{
-  from{ top:-60px; }
-  to{ top:640px; }
+#scanL{ left:50%; transform: translateX(-50%); }
+#scanR{ left:50%; transform: translateX(-50%); }
+
+.scanning #scanLines{ opacity:1; }
+
+/* 這兩個動畫 duration 由 JS 設定（= scanTime，慢慢跑完整段） */
+@keyframes scanL_slow{
+  0%   { transform: translateX(-50%) translateX(0px); opacity:.35; }
+  33%  { transform: translateX(-50%) translateX(-170px); opacity:1; }
+  66%  { transform: translateX(-50%) translateX(0px); opacity:.80; }
+  100% { transform: translateX(-50%) translateX(-170px); opacity:1; }
+}
+@keyframes scanR_slow{
+  0%   { transform: translateX(-50%) translateX(0px); opacity:.35; }
+  33%  { transform: translateX(-50%) translateX(170px); opacity:1; }
+  66%  { transform: translateX(-50%) translateX(0px); opacity:.80; }
+  100% { transform: translateX(-50%) translateX(170px); opacity:1; }
 }
 
 /* HUD */
@@ -306,9 +342,37 @@ header{
   45%{ opacity:.26; }
   70%{ opacity:.18; }
 }
-#line1{ left:28px; top:232px; width:260px; }
-#line2{ left:52px; top:356px; width:220px; }
-#line3{ left:38px; top:404px; width:250px; }
+#line1{ left:28px; top:236px; width:260px; }
+#line2{ left:52px; top:360px; width:220px; }
+#line3{ left:38px; top:410px; width:250px; }
+
+/* 波形小框框：保留 */
+#waveWrap{
+  position:absolute;
+  left:16px;
+  bottom:228px;
+  width:120px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.28);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#wave{ width:104px; height:28px; }
+#wave path{
+  stroke: color-mix(in oklab, var(--accent) 70%, white 30%);
+  stroke-width:2;
+  fill:none;
+  opacity:.85;
+}
+.scanning #wave path{ animation: waveMove 1.4s linear infinite; }
+@keyframes waveMove{
+  from{ transform: translateX(0px); }
+  to{ transform: translateX(-18px); }
+}
 
 #lockTag{
   position:absolute;
@@ -332,6 +396,25 @@ header{
   color: color-mix(in oklab, var(--accent) 65%, white 35%);
   border-color: rgba(255,255,255,0.16);
 }
+
+/* LOCKED 文字：完成 0.3 秒先顯示 */
+#lockedBadge{
+  position:absolute;
+  left:50%;
+  bottom:206px;
+  transform:translateX(-50%);
+  font-size:12px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color: rgba(232,251,255,.72);
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.30);
+  opacity:0;
+  transition: opacity .18s ease;
+}
+.showLocked #lockedBadge{ opacity:1; }
 
 #bigPct{
   position:absolute;
@@ -373,6 +456,37 @@ header{
   font-weight:900;
   color: color-mix(in oklab, var(--accent) 70%, white 30%);
   text-shadow: 0 0 18px var(--glow);
+}
+
+/* 下一步（柔） */
+#nextStep{
+  position:absolute;
+  left:18px; right:18px;
+  bottom:56px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  opacity:.0;
+  transform: translateY(6px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.hold #nextStep{
+  opacity:1;
+  transform: translateY(0);
+}
+#nextStep .k{
+  text-align:left;
+  font-size:12px;
+  letter-spacing:1px;
+  color: rgba(232,251,255,.62);
+  text-transform:uppercase;
+}
+#nextStep .v{
+  text-align:right;
+  font-size:13px;
+  letter-spacing:.4px;
+  color: rgba(232,251,255,.90);
+  font-weight:650;
 }
 
 .pop{ animation: pop .58s ease; }
@@ -421,31 +535,30 @@ header{
   color: color-mix(in oklab, var(--accent) 55%, white 45%);
 }
 
-#waveWrap{
+/* 夜間星塵（只在橘/紅） */
+#stardust{
   position:absolute;
-  left:16px;
-  bottom:228px;
-  width:120px;
-  height:44px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.28);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  transition: opacity .25s ease;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.10), transparent 35%),
+    radial-gradient(circle at 75% 20%, rgba(255,255,255,0.08), transparent 38%),
+    radial-gradient(circle at 55% 75%, rgba(255,255,255,0.10), transparent 40%),
+    radial-gradient(circle at 30% 70%, rgba(255,255,255,0.07), transparent 42%);
+  mix-blend-mode: screen;
+  filter: blur(0.2px);
 }
-#wave{ width:104px; height:28px; }
-#wave path{
-  stroke: color-mix(in oklab, var(--accent) 70%, white 30%);
-  stroke-width:2;
-  fill:none;
-  opacity:.85;
+body.theme-orange #stardust,
+body.theme-red #stardust{
+  opacity: .35;
 }
-.scanning #wave path{ animation: waveMove 1.2s linear infinite; }
-@keyframes waveMove{
-  from{ transform: translateX(0px); }
-  to{ transform: translateX(-18px); }
+body.theme-orange #stardust{ animation: stars 6.5s ease-in-out infinite; }
+body.theme-red #stardust{ animation: stars 7.2s ease-in-out infinite; }
+@keyframes stars{
+  0%,100%{ transform: translateY(0px); opacity:.30; }
+  50%{ transform: translateY(-6px); opacity:.42; }
 }
 
 /* 指引疊圖 */
@@ -471,8 +584,8 @@ header{
   background: color-mix(in oklab, rgba(0,0,0,0.56) 72%, transparent);
   box-shadow: 0 0 44px var(--glow);
   text-align:center;
-  width: 80%;
-  max-width: 290px;
+  width: 82%;
+  max-width: 320px;
 }
 .instructionTitle{
   font-size:13px;
@@ -550,13 +663,17 @@ header{
 <div id="wrap">
 
   <div id="scanner">
-    <div id="scanline"></div>
+    <div id="stardust"></div>
+
+    <div id="scanLines">
+      <div class="scanLine" id="scanL"></div>
+      <div class="scanLine" id="scanR"></div>
+    </div>
+
     <div id="scannerCorners"></div>
 
-    <div id="core">
-      <div id="eye"></div>
-      <div id="pupil"></div>
-    </div>
+    <!-- ✅ 虛線方框 -->
+    <div id="targetBox"></div>
 
     <div id="meter">
       <div id="meterLabel">FATIGUE INDEX</div>
@@ -588,6 +705,7 @@ header{
       <div class="hudLine" id="line2"></div>
       <div class="hudLine" id="line3"></div>
 
+      <!-- ✅ 波形小框：保留 -->
       <div id="waveWrap">
         <svg id="wave" viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg" aria-label="waveform">
           <path d="M0 15 C10 5, 20 25, 30 15 C40 5, 50 25, 60 15 C70 5, 80 25, 90 15 C100 5, 110 25, 120 15"/>
@@ -595,6 +713,7 @@ header{
       </div>
 
       <div id="lockTag">TARGET · LOCK</div>
+      <div id="lockedBadge">LOCKED</div>
 
       <div id="bigPct">--%</div>
 
@@ -604,6 +723,11 @@ header{
           <strong id="stateStrong">待機</strong>
         </div>
         <div id="advice">—</div>
+      </div>
+
+      <div id="nextStep">
+        <div class="k">NEXT STEP</div>
+        <div class="v" id="nextText">—</div>
       </div>
 
       <div id="scanLog">
@@ -616,10 +740,9 @@ header{
       <div class="instructionBox">
         <div class="instructionTitle">SCAN PREP</div>
         <div class="instructionText">
-          請將<strong>食指</strong>放置於<br>
-          任一顆鏡頭前方，<br>
-          並保持不動，<br>
-          系統將開始進行掃描。
+          請將鏡頭對準<strong>手掌</strong><br>
+          讓手掌完整落在虛線框內<br>
+          保持不動 2–3 秒後開始掃描。
         </div>
       </div>
     </div>
@@ -642,7 +765,6 @@ header{
 
 <script>
 const scanner  = document.getElementById("scanner");
-const scanline = document.getElementById("scanline");
 const bigBtn   = document.getElementById("bigBtn");
 
 const bigPct = document.getElementById("bigPct");
@@ -653,6 +775,7 @@ const tempEl = document.getElementById("temp");
 
 const stateStrong = document.getElementById("stateStrong");
 const adviceEl = document.getElementById("advice");
+const nextText = document.getElementById("nextText");
 
 const latEl = document.getElementById("lat");
 const bufEl = document.getElementById("buf");
@@ -664,7 +787,6 @@ const progressBar = document.getElementById("progressBar");
 const scanMsg = document.getElementById("scanMsg");
 
 const meterFill = document.getElementById("meterFill");
-const pupil = document.getElementById("pupil");
 
 const zoneFresh  = document.getElementById("zoneFresh");
 const zoneOk     = document.getElementById("zoneOk");
@@ -672,16 +794,23 @@ const zoneOrange = document.getElementById("zoneOrange");
 const zoneRed    = document.getElementById("zoneRed");
 
 const resetBtn = document.getElementById("resetBtn");
+const scanL = document.getElementById("scanL");
+const scanR = document.getElementById("scanR");
 
 let isScanning = false;
 let hudTimer = null;
 let progressTimer = null;
-let logTimer = null;
 let meterTimer = null;
 
-/* 重置後第一次：可以保留「稍微偏保守」＝更容易顯示累一點（更能催睡） */
 let lastScanAt = 0;
 let isFirstAfterReset = true;
+
+/* 三段式狀態 */
+const phases = [
+  { key:"ALIGN",   dur:0.34, text:"ALIGN · 對準中（保持穩定）" },
+  { key:"ACQUIRE", dur:0.33, text:"ACQUIRE · 取得訊號（正在收集）" },
+  { key:"SOLVE",   dur:0.33, text:"SOLVE · 推論中（快完成了）" }
+];
 
 function randInt(min, max){
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -689,8 +818,9 @@ function randInt(min, max){
 function randHex(){
   return randInt(4096, 65535).toString(16).toUpperCase();
 }
-function setTheme(theme){ document.body.className = theme; }
-
+function setTheme(theme){
+  document.body.className = theme;
+}
 function setDisabled(disabled){
   bigBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
   const pe = disabled ? "none" : "auto";
@@ -699,10 +829,19 @@ function setDisabled(disabled){
   zoneOrange.style.pointerEvents = pe;
   zoneRed.style.pointerEvents    = pe;
 }
-
 function setScannerState(scanning, hold){
   scanner.classList.toggle("scanning", scanning);
   scanner.classList.toggle("hold", hold);
+}
+function setLocked(show){
+  scanner.classList.toggle("showLocked", show);
+}
+
+/* ✅ 掃描線速度：把動畫 duration 設成 scanTime（整段慢慢掃） */
+function setScanLineDuration(ms){
+  const s = (ms/1000).toFixed(3) + "s";
+  scanL.style.animation = `scanL_slow ${s} linear 1 forwards`;
+  scanR.style.animation = `scanR_slow ${s} linear 1 forwards`;
 }
 
 /* % 彈跳 */
@@ -720,20 +859,15 @@ function animatePercent(toValue){
     const eased = 1 - Math.pow(1 - t, 3);
     const current = Math.round(fromValue + (toValue - fromValue) * eased);
     bigPct.textContent = current + "%";
-
-    /* 累 => 瞳孔稍微變大 */
-    const s = 1 + (current/100) * 0.55;
-    pupil.style.transform = `translate(-50%,-50%) scale(${s.toFixed(2)})`;
-
     if(t < 1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
 
-/* HUD 數字（克制、只變值） */
+/* HUD 數字（克制） */
 function startHUD(fast){
   if(hudTimer) clearInterval(hudTimer);
-  const interval = fast ? 280 : 980;
+  const interval = fast ? 320 : 980;
   hudTimer = setInterval(() => {
     sigEl.textContent  = randInt(72, 99);
     noiEl.textContent  = randInt(3, 18);
@@ -761,36 +895,7 @@ function startProgress(scanTime){
   }, 60);
 }
 
-/* 掃描 LOG */
-const scanLogsBase = [
-  "CALIBRATION · LENS ALIGN",
-  "VALIDATION · SENSOR SYNC",
-  "CRC CHECK · FRAME INTEGRITY",
-  "NOISE FILTER · STABILIZE",
-  "EYE TRACK · CONFIRM",
-  "FATIGUE MODEL · INFERENCE",
-  "RESULT COMPOSE · FINALIZE"
-];
-
-function startLog(isRescan){
-  stopLog();
-  const logs = isRescan
-    ? ["RE-SCAN · CONFIRM SIGNAL", ...scanLogsBase]
-    : scanLogsBase.slice();
-
-  let i = 0;
-  scanMsg.textContent = logs[0];
-  logTimer = setInterval(() => {
-    i = Math.min(logs.length - 1, i + 1);
-    scanMsg.textContent = logs[i];
-  }, 650);
-}
-function stopLog(){
-  if(logTimer) clearInterval(logTimer);
-  logTimer = null;
-}
-
-/* 疲勞槽（掃描中爬升） */
+/* 疲勞槽 */
 function setMeterFill(percent){
   const h = Math.max(0, Math.min(92, Math.round(percent * 0.92)));
   meterFill.style.height = h + "%";
@@ -813,59 +918,81 @@ function stopMeterTimer(){
   meterTimer = null;
 }
 
-/* 震動 + 嗶 */
+/* 溫和完成提示 */
 function feedbackComplete(){
-  try{ navigator.vibrate?.(20); }catch(e){}
+  try{ navigator.vibrate?.(15); }catch(e){}
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.type = "sine";
-    o.frequency.value = 880;
-    g.gain.value = 0.055;
+    o.frequency.value = 720;
+    g.gain.value = 0.04;
     o.connect(g); g.connect(ctx.destination);
     o.start();
-    setTimeout(()=>{ o.stop(); ctx.close(); }, 90);
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 70);
   }catch(e){}
 }
 
-/* 文案 */
-function adviceFor(mode, fatigue){
-  if(mode === "fresh")  return "很有精神｜還可以再玩一下";
-  if(mode === "ok")     return "有點累但還行｜可以收尾一下";
-  if(mode === "orange") return "很想睡｜快去刷牙上床";
-  return "累爆了｜現在就去睡覺";
+/* 建議 */
+function adviceFor(mode){
+  if(mode === "fresh")  return "精神不錯｜再玩一下也OK";
+  if(mode === "ok")     return "有點累｜先收尾、慢慢準備";
+  if(mode === "orange") return "很想睡｜刷牙洗臉就上床";
+  return "真的很累｜現在就去睡覺";
+}
+function nextFor(mode){
+  if(mode === "orange") return "刷牙 → 上床 → 讀 1 頁書";
+  if(mode === "red")    return "直接上床 → 關燈 → 深呼吸 3 次";
+  return "—";
 }
 
-/* ✅ 依你給的區間：綠20-45、藍50-75、橘70-85、紅90-100 */
+/* 區間：綠20–45、紫(取代藍)50–75、橘70–85、紅90–100 */
 function resolveOutcome(mode){
-  const bias = isFirstAfterReset ? 1 : 0; // 重置後第一次：稍微推高 1~2%（更像「掃描比較嚴格」）
+  const bias = isFirstAfterReset ? 1 : 0;
 
   if(mode === "fresh"){
     const fatigue = Math.min(45, randInt(20,45) + randInt(0,bias));
-    return { fatigue, theme:"theme-green", state:"很有精神", advice: adviceFor(mode, fatigue) };
+    return { fatigue, theme:"theme-green", state:"很有精神", advice: adviceFor(mode), next: nextFor(mode) };
   }
-
   if(mode === "ok"){
-    // 藍區 50-75，重置後略嚴格 -> 更容易落在上緣
     const base = randInt(50,75);
     const fatigue = Math.min(75, base + randInt(0, bias ? 2 : 1));
-    return { fatigue, theme:"theme-blue", state:"有點累但還行", advice: adviceFor(mode, fatigue) };
+    return { fatigue, theme:"theme-purple", state:"有點累但還行", advice: adviceFor(mode), next: nextFor(mode) };
   }
-
   if(mode === "orange"){
-    // 橘區 70-85：用偏態讓 78~84 更常出現
     let fatigue = randInt(70,85);
     if(Math.random() < 0.55) fatigue = randInt(78,85);
     fatigue = Math.min(85, fatigue + randInt(0, bias ? 2 : 1));
-    return { fatigue, theme:"theme-orange", state:"很想睡", advice: adviceFor(mode, fatigue) };
+    return { fatigue, theme:"theme-orange", state:"很想睡", advice: adviceFor(mode), next: nextFor(mode) };
+  }
+  let fatigue = randInt(90,100);
+  if(Math.random() < 0.60) fatigue = randInt(94,100);
+  fatigue = Math.min(100, fatigue + randInt(0, bias ? 1 : 0));
+  return { fatigue, theme:"theme-red", state:"累爆", advice: adviceFor(mode), next: nextFor("red") };
+}
+
+/* ✅ 三段式文字 */
+function startPhases(scanTime){
+  const isRescan = (Date.now() - lastScanAt) < 25000;
+  const prefix = isRescan ? "RE-SCAN · " : "";
+
+  function setPhase(i){
+    const p = phases[i];
+    modeEl.textContent = p.key;
+    scanMsg.textContent = prefix + p.text;
   }
 
-  // red
-  let fatigue = randInt(90,100);
-  if(Math.random() < 0.60) fatigue = randInt(94,100); // 紅區更常見 95+ 逼睡
-  fatigue = Math.min(100, fatigue + randInt(0, bias ? 1 : 0));
-  return { fatigue, theme:"theme-red", state:"累爆", advice: adviceFor(mode, fatigue) };
+  setPhase(0);
+  const p1 = Math.floor(scanTime * phases[0].dur);
+  const p2 = Math.floor(scanTime * phases[1].dur);
+
+  setTimeout(()=> setPhase(1), p1);
+  setTimeout(()=> setPhase(2), p1 + p2);
+
+  setTimeout(()=>{
+    scanMsg.textContent = prefix + "LOCKING · 讀取完成（鎖定結果）";
+  }, Math.max(0, scanTime - 220));
 }
 
 /* 掃描流程 */
@@ -874,54 +1001,63 @@ function startScan(mode){
   isScanning = true;
 
   overlay.classList.add("hide");
+  setLocked(false);
 
   const now = Date.now();
-  const isRescan = (now - lastScanAt) < 25000;
   lastScanAt = now;
 
-  const scanTime = randInt(4200, 5600);
-  scanline.style.animationDuration = scanTime + "ms";
+  const scanTime = randInt(5200, 6800);  // 你原本秒數區間附近，偏慢一點點更「真」
 
+  /* ✅ 掃描中：仍是藍色（不切紫） */
   setTheme("theme-blue");
+
   setDisabled(true);
   setScannerState(true, false);
 
-  modeEl.textContent = "SCAN";
-  stateStrong.textContent = isRescan ? "再次掃描中" : "掃描中";
-  adviceEl.textContent = "分析中…";
+  /* ✅ 掃描線：整段 scanTime 慢慢跑一次（中→外→中→外） */
+  setScanLineDuration(scanTime);
+
+  stateStrong.textContent = "掃描中";
+  adviceEl.textContent = "請保持穩定…";
+  nextText.textContent = "—";
   bigPct.textContent = "--%";
   setMeterFill(0);
 
   startHUD(true);
   startProgress(scanTime);
-  startLog(isRescan);
   startMeterDuringScan(scanTime);
+  startPhases(scanTime);
 
   const out = resolveOutcome(mode);
 
   setTimeout(() => {
     setScannerState(false, true);
-    stopLog();
     stopMeterTimer();
+    startHUD(false);
 
-    setTheme(out.theme);
-    modeEl.textContent = "HOLD";
+    setLocked(true);
+    modeEl.textContent = "LOCKED";
     stateStrong.textContent = out.state;
     adviceEl.textContent = out.advice;
+    nextText.textContent = out.next;
 
-    animatePercent(out.fatigue);
-    setMeterFill(out.fatigue);
+    bigPct.textContent = "--%";
+    scanMsg.textContent = "LOCKED · RESULT READY";
 
-    const extra = isRescan ? " · CONFIRMED" : "";
-    scanMsg.textContent = "COMPLETE · RESULT LOCKED" + extra;
+    /* ✅ 先切到結果主題（紫/綠/橘/紅），0.3秒後才跳% */
+    setTheme(out.theme);
 
-    startHUD(false);
-    feedbackComplete();
+    setTimeout(() => {
+      animatePercent(out.fatigue);
+      setMeterFill(out.fatigue);
+      scanMsg.textContent = "COMPLETE · RESULT CONFIRMED";
+      feedbackComplete();
 
-    isFirstAfterReset = false;
+      isFirstAfterReset = false;
+      isScanning = false;
+      setDisabled(false);
+    }, 300);
 
-    isScanning = false;
-    setDisabled(false);
   }, scanTime);
 }
 
@@ -931,7 +1067,7 @@ zoneOk.addEventListener("click",     () => startScan("ok"));
 zoneOrange.addEventListener("click", () => startScan("orange"));
 zoneRed.addEventListener("click",    () => startScan("red"));
 
-/* 點大按鈕走橘（最常用） */
+/* 大按鈕：走橘（最常用） */
 bigBtn.addEventListener("click", () => {
   if(bigBtn.getAttribute("aria-disabled") === "true") return;
   startScan("orange");
@@ -941,19 +1077,20 @@ bigBtn.addEventListener("click", () => {
 function resetScanner(){
   if(hudTimer) clearInterval(hudTimer);
   if(progressTimer) clearInterval(progressTimer);
-  if(logTimer) clearInterval(logTimer);
   if(meterTimer) clearInterval(meterTimer);
-  hudTimer = progressTimer = logTimer = meterTimer = null;
+  hudTimer = progressTimer = meterTimer = null;
 
   isScanning = false;
+
   setTheme("theme-blue");
   setScannerState(false, false);
+  setLocked(false);
   setDisabled(false);
 
   bigPct.textContent = "--%";
-  pupil.style.transform = "translate(-50%,-50%) scale(1)";
   stateStrong.textContent = "待機";
   adviceEl.textContent = "—";
+  nextText.textContent = "—";
   modeEl.textContent = "IDLE";
 
   scanMsg.textContent = "SYSTEM READY · AWAIT INPUT";
