@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>你多累測試掃描器</title>
+
+<style>
+*{ box-sizing:border-box; }
+
+:root{
+  /* ✅ APP 開始：藍色（掃描中也同一個藍） */
+  --bg:#061521;
+  --panel:#04111a;
+  --text:#e8fbff;
+  --muted:rgba(232,251,255,.72);
+
+  --accent:#60d7ff;        /* 藍 */
+  --accentText:#001f2b;
+  --glow:rgba(96,215,255,.26);
+  --grid:rgba(232,251,255,.05);
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  text-align:center;
+  transition: background .25s ease;
+  overflow-x:hidden;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    radial-gradient(circle at 25% 18%, rgba(255,255,255,0.035), transparent 55%),
+    radial-gradient(circle at 75% 32%, rgba(255,255,255,0.028), transparent 60%);
+  background-size: 42px 42px, 42px 42px, auto, auto;
+  pointer-events:none;
+  opacity:.78;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.02) 0px,
+    rgba(255,255,255,0.02) 1px,
+    transparent 2px,
+    transparent 8px
+  );
+  mix-blend-mode: overlay;
+  opacity:.10;
+  pointer-events:none;
+}
+
+/* 結果主題：綠/紫/橘/莓紅（藍區改紫） */
+.theme-green{
+  --bg:#061a12; --panel:#04140d;
+  --accent:#4ff3a6; --accentText:#002b19;
+  --glow:rgba(79,243,166,.24);
+}
+.theme-blue{
+  /* ✅ 仍保留藍（當作待機/掃描色） */
+  --bg:#061521; --panel:#04111a;
+  --accent:#60d7ff; --accentText:#001f2b;
+  --glow:rgba(96,215,255,.26);
+}
+.theme-purple{
+  /* ✅ 藍色區位改紫（左二：有點累但還行） */
+  --bg:#0f0720; --panel:#0b0517;
+  --accent:#b783ff; --accentText:#1b0033;
+  --glow:rgba(183,131,255,.26);
+  --grid:rgba(232,251,255,.04);
+}
+.theme-orange{
+  --bg:#16100a; --panel:#120c06;
+  --accent:#ffb35a; --accentText:#2b1400;
+  --glow:rgba(255,179,90,.20);
+}
+.theme-red{
+  /* ✅ 柔莓紅 / 酒紅 */
+  --bg:#16070c; --panel:#120509;
+  --accent:#ff6b88; --accentText:#2b0010;
+  --glow:rgba(255,107,136,.20);
+}
+
+header{
+  padding:16px 10px 10px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+#appTitle{
+  font-size:22px;
+  font-weight:950;
+  letter-spacing:1.5px;
+}
+#subtitle{
+  margin-top:6px;
+  font-size:12px;
+  letter-spacing:.9px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+
+#wrap{
+  max-width:420px;
+  margin:0 auto;
+  padding: 10px 12px 20px;
+}
+
+/* Scanner */
+#scanner{
+  width: 340px;
+  height: 560px;
+  margin: 10px auto 10px;
+  border-radius: 28px;
+  border: 2px solid var(--accent);
+  position: relative;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.055), rgba(0,0,0,0.92));
+  overflow:hidden;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.02), 0 20px 58px rgba(0,0,0,0.50);
+  transition:border-color .25s ease;
+}
+
+/* 角落框線 */
+#scannerCorners{
+  position:absolute;
+  inset:12px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,0.10);
+  pointer-events:none;
+}
+#scannerCorners::before, #scannerCorners::after{
+  content:"";
+  position:absolute;
+  width:16px; height:16px;
+  border:2px solid color-mix(in oklab, var(--accent) 75%, white 25%);
+  opacity:.9;
+}
+#scannerCorners::before{ left:8px; top:8px; border-right:none; border-bottom:none; }
+#scannerCorners::after{ right:8px; bottom:8px; border-left:none; border-top:none; }
+
+/* ✅ 中央：虛線對準框（不要手掌） */
+#targetBox{
+  position:absolute;
+  top:122px;
+  left:50%;
+  transform:translateX(-50%);
+  width:240px;
+  height:170px;
+  border-radius:22px;
+  border:2px dashed rgba(232,251,255,0.26);
+  background: rgba(0,0,0,0.18);
+  box-shadow: inset 0 0 18px rgba(255,255,255,0.03);
+}
+#targetBox::before{
+  content:"";
+  position:absolute;
+  inset:-40px;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.08), transparent 55%);
+  pointer-events:none;
+}
+
+/* 疲勞能量槽 */
+#meter{
+  position:absolute;
+  bottom:112px; left:50%;
+  transform:translateX(-50%);
+  width:180px; height:160px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.18);
+  overflow:hidden;
+}
+#meterLabel{
+  position:absolute;
+  left:12px; top:10px;
+  font-size:11px;
+  letter-spacing:1px;
+  color:rgba(232,251,255,.72);
+  text-transform:uppercase;
+}
+#meterFill{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:0%;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--accent) 55%, transparent),
+    color-mix(in oklab, var(--accent) 25%, transparent)
+  );
+  box-shadow: inset 0 0 18px var(--glow);
+  transition: height .55s ease;
+}
+#meterGlow{
+  position:absolute;
+  left:-30%;
+  width:160%;
+  height:44px;
+  top:-10px;
+  background: radial-gradient(circle, rgba(255,255,255,0.10), transparent 72%);
+  opacity:.55;
+  animation: glowDrift 3.8s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes glowDrift{
+  0%,100%{ transform: translateX(-6%); opacity:.45; }
+  50%{ transform: translateX(6%); opacity:.75; }
+}
+
+/* ✅ 兩條直線掃描：慢速「中→外→中→外」(整段掃描期間只做這個) */
+#scanLines{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+}
+.scanLine{
+  position:absolute;
+  top:-50px;
+  height:700px;   /* 超過滿屏確保滿長度 */
+  width:3px;
+  border-radius:999px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--accent) 92%, white 8%),
+    transparent
+  );
+  box-shadow: 0 0 18px var(--glow);
+  opacity:.95;
+  filter: blur(.15px);
+}
+#scanL{ left:50%; transform: translateX(-50%); }
+#scanR{ left:50%; transform: translateX(-50%); }
+
+.scanning #scanLines{ opacity:1; }
+
+/* 這兩個動畫 duration 由 JS 設定（= scanTime，慢慢跑完整段） */
+@keyframes scanL_slow{
+  0%   { transform: translateX(-50%) translateX(0px); opacity:.35; }
+  33%  { transform: translateX(-50%) translateX(-170px); opacity:1; }
+  66%  { transform: translateX(-50%) translateX(0px); opacity:.80; }
+  100% { transform: translateX(-50%) translateX(-170px); opacity:1; }
+}
+@keyframes scanR_slow{
+  0%   { transform: translateX(-50%) translateX(0px); opacity:.35; }
+  33%  { transform: translateX(-50%) translateX(170px); opacity:1; }
+  66%  { transform: translateX(-50%) translateX(0px); opacity:.80; }
+  100% { transform: translateX(-50%) translateX(170px); opacity:1; }
+}
+
+/* HUD */
+#hudLayer{ position:absolute; inset:0; pointer-events:none; }
+
+#hudTopBar{
+  position:absolute;
+  left:14px; right:14px; top:12px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:11px;
+  color:rgba(232,251,255,.75);
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+#hudTopBar b{
+  color: color-mix(in oklab, var(--accent) 70%, white 30%);
+  font-variant-numeric:tabular-nums;
+}
+
+#progressWrap{
+  position:absolute;
+  left:18px; right:18px;
+  top:44px;
+  height:10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  overflow:hidden;
+}
+#progressBar{
+  height:100%;
+  width:0%;
+  background: color-mix(in oklab, var(--accent) 78%, white 22%);
+  box-shadow: 0 0 18px var(--glow);
+  transition: width .12s linear;
+}
+
+#sideStats{
+  position:absolute;
+  left:16px; right:16px;
+  top:78px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+.statCol{
+  width: 132px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.hudChip{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  padding:7px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.30);
+  font-size:11px;
+  color:rgba(232,251,255,.78);
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.30);
+}
+.hudChip b{
+  color: color-mix(in oklab, var(--accent) 70%, white 30%);
+  font-variant-numeric: tabular-nums;
+}
+
+.hudLine{
+  position:absolute;
+  height:1px;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--accent) 60%, white 40%), transparent);
+  opacity:.20;
+  filter: drop-shadow(0 0 10px var(--glow));
+  animation: flicker 3.4s ease-in-out infinite;
+}
+@keyframes flicker{
+  0%,100%{ opacity:.14; }
+  45%{ opacity:.26; }
+  70%{ opacity:.18; }
+}
+#line1{ left:28px; top:236px; width:260px; }
+#line2{ left:52px; top:360px; width:220px; }
+#line3{ left:38px; top:410px; width:250px; }
+
+/* 波形小框框：保留 */
+#waveWrap{
+  position:absolute;
+  left:16px;
+  bottom:228px;
+  width:120px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.28);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#wave{ width:104px; height:28px; }
+#wave path{
+  stroke: color-mix(in oklab, var(--accent) 70%, white 30%);
+  stroke-width:2;
+  fill:none;
+  opacity:.85;
+}
+.scanning #wave path{ animation: waveMove 1.4s linear infinite; }
+@keyframes waveMove{
+  from{ transform: translateX(0px); }
+  to{ transform: translateX(-18px); }
+}
+
+#lockTag{
+  position:absolute;
+  right:16px;
+  bottom:228px;
+  font-size:11px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color: rgba(232,251,255,.70);
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.30);
+}
+.scanning #lockTag{ animation: lockblink 0.95s ease-in-out infinite; }
+@keyframes lockblink{
+  0%,100%{ opacity:.35; }
+  50%{ opacity:1; }
+}
+.hold #lockTag{
+  color: color-mix(in oklab, var(--accent) 65%, white 35%);
+  border-color: rgba(255,255,255,0.16);
+}
+
+/* LOCKED 文字：完成 0.3 秒先顯示 */
+#lockedBadge{
+  position:absolute;
+  left:50%;
+  bottom:206px;
+  transform:translateX(-50%);
+  font-size:12px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color: rgba(232,251,255,.72);
+  padding:7px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.30);
+  opacity:0;
+  transition: opacity .18s ease;
+}
+.showLocked #lockedBadge{ opacity:1; }
+
+#bigPct{
+  position:absolute;
+  left:0; right:0;
+  bottom:160px;
+  font-size:86px;
+  font-weight:950;
+  letter-spacing:1px;
+  color:var(--accent);
+  text-shadow: 0 0 34px var(--glow);
+  line-height:1;
+}
+
+#hudState{
+  position:absolute;
+  left:18px; right:18px;
+  bottom:84px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+}
+#stateTitle{
+  text-align:left;
+  font-size:13px;
+  letter-spacing:1px;
+  color:rgba(232,251,255,.75);
+}
+#stateTitle strong{
+  display:block;
+  font-size:16px;
+  color: color-mix(in oklab, var(--accent) 65%, white 35%);
+  margin-top:6px;
+  letter-spacing:.6px;
+}
+#advice{
+  text-align:right;
+  font-size:18px;
+  font-weight:900;
+  color: color-mix(in oklab, var(--accent) 70%, white 30%);
+  text-shadow: 0 0 18px var(--glow);
+}
+
+/* 下一步（柔） */
+#nextStep{
+  position:absolute;
+  left:18px; right:18px;
+  bottom:56px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  opacity:.0;
+  transform: translateY(6px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.hold #nextStep{
+  opacity:1;
+  transform: translateY(0);
+}
+#nextStep .k{
+  text-align:left;
+  font-size:12px;
+  letter-spacing:1px;
+  color: rgba(232,251,255,.62);
+  text-transform:uppercase;
+}
+#nextStep .v{
+  text-align:right;
+  font-size:13px;
+  letter-spacing:.4px;
+  color: rgba(232,251,255,.90);
+  font-weight:650;
+}
+
+.pop{ animation: pop .58s ease; }
+@keyframes pop{
+  0%{ transform:translateY(10px) scale(.96); opacity:.65; }
+  55%{ transform:translateY(-10px) scale(1.04); opacity:1; }
+  100%{ transform:translateY(0) scale(1); opacity:1; }
+}
+
+#scanLog{
+  position:absolute;
+  left:18px; right:18px;
+  bottom:16px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.28);
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  overflow:hidden;
+}
+#scanDot{
+  width:10px; height:10px;
+  border-radius:50%;
+  background: color-mix(in oklab, var(--accent) 80%, white 20%);
+  box-shadow: 0 0 18px var(--glow);
+  opacity:.55;
+}
+.scanning #scanDot{ animation: dotpulse 0.95s ease-in-out infinite; }
+@keyframes dotpulse{
+  0%,100%{ transform:scale(.85); opacity:.35; }
+  50%{ transform:scale(1.2); opacity:1; }
+}
+#scanMsg{
+  font-size:11px;
+  letter-spacing:.6px;
+  color: rgba(232,251,255,.72);
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.hold #scanMsg{
+  color: color-mix(in oklab, var(--accent) 55%, white 45%);
+}
+
+/* 夜間星塵（只在橘/紅） */
+#stardust{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  transition: opacity .25s ease;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.10), transparent 35%),
+    radial-gradient(circle at 75% 20%, rgba(255,255,255,0.08), transparent 38%),
+    radial-gradient(circle at 55% 75%, rgba(255,255,255,0.10), transparent 40%),
+    radial-gradient(circle at 30% 70%, rgba(255,255,255,0.07), transparent 42%);
+  mix-blend-mode: screen;
+  filter: blur(0.2px);
+}
+body.theme-orange #stardust,
+body.theme-red #stardust{
+  opacity: .35;
+}
+body.theme-orange #stardust{ animation: stars 6.5s ease-in-out infinite; }
+body.theme-red #stardust{ animation: stars 7.2s ease-in-out infinite; }
+@keyframes stars{
+  0%,100%{ transform: translateY(0px); opacity:.30; }
+  50%{ transform: translateY(-6px); opacity:.42; }
+}
+
+/* 指引疊圖 */
+#instructionOverlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,0.20);
+  backdrop-filter: blur(2px);
+  z-index: 6;
+  transition: opacity .35s ease;
+}
+#instructionOverlay.hide{
+  opacity:0;
+  pointer-events:none;
+}
+.instructionBox{
+  padding:20px 22px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.18);
+  background: color-mix(in oklab, rgba(0,0,0,0.56) 72%, transparent);
+  box-shadow: 0 0 44px var(--glow);
+  text-align:center;
+  width: 82%;
+  max-width: 320px;
+}
+.instructionTitle{
+  font-size:13px;
+  letter-spacing:2px;
+  margin-bottom:10px;
+  color: color-mix(in oklab, var(--accent) 65%, white 35%);
+  text-transform:uppercase;
+}
+.instructionText{
+  font-size:15px;
+  line-height:1.65;
+  letter-spacing:.4px;
+  color: rgba(232,251,255,.92);
+}
+
+/* 按鈕（20/30/30/20） */
+#bigBtnWrap{
+  width: 340px;
+  margin: 10px auto 0;
+  position:relative;
+}
+#bigBtn{
+  width:100%;
+  height:86px;
+  border:none;
+  border-radius:22px;
+  background:var(--accent);
+  color:var(--accentText);
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:1.5px;
+  box-shadow:0 18px 48px rgba(0,0,0,0.36), 0 0 34px var(--glow);
+  transition: background .25s ease, color .25s ease, box-shadow .25s ease;
+}
+#bigBtn[aria-disabled="true"]{ opacity:.45; }
+
+.zone{
+  position:absolute;
+  top:0; height:86px;
+  cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
+  background:rgba(0,0,0,0);
+}
+#zoneFresh{ left:0;  width:20%; border-radius:22px 0 0 22px; }
+#zoneOk{    left:20%; width:30%; }
+#zoneOrange{left:50%; width:30%; }
+#zoneRed{   left:80%; width:20%; border-radius:0 22px 22px 0; }
+
+#resetBtn{
+  margin:10px auto 0;
+  padding:10px 22px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.25);
+  background:rgba(0,0,0,0.32);
+  color:rgba(232,251,255,0.85);
+  font-size:14px;
+  letter-spacing:2px;
+  backdrop-filter: blur(2px);
+  box-shadow:0 0 18px rgba(0,0,0,0.38);
+  display:inline-flex;
+  align-items:center;
+  user-select:none;
+  -webkit-user-select:none;
+}
+#resetBtn:active{ transform: scale(.96); }
+</style>
+</head>
+
+<body class="theme-blue">
+<header>
+  <div id="appTitle">你多累測試掃描器</div>
+  <div id="subtitle">FATIGUE · XRAY · SLEEP READINESS · MODULE</div>
+</header>
+
+<div id="wrap">
+
+  <div id="scanner">
+    <div id="stardust"></div>
+
+    <div id="scanLines">
+      <div class="scanLine" id="scanL"></div>
+      <div class="scanLine" id="scanR"></div>
+    </div>
+
+    <div id="scannerCorners"></div>
+
+    <!-- ✅ 虛線方框 -->
+    <div id="targetBox"></div>
+
+    <div id="meter">
+      <div id="meterLabel">FATIGUE INDEX</div>
+      <div id="meterFill"><div id="meterGlow"></div></div>
+    </div>
+
+    <div id="hudLayer">
+      <div id="hudTopBar">
+        <span>MODE:<b id="mode">IDLE</b></span>
+        <span>SIG:<b id="sig">--</b>%</span>
+        <span>NOI:<b id="noi">--</b>dB</span>
+        <span>TEMP:<b id="temp">--</b>°C</span>
+      </div>
+
+      <div id="progressWrap"><div id="progressBar"></div></div>
+
+      <div id="sideStats">
+        <div class="statCol">
+          <div class="hudChip"><span>LAT</span><b id="lat">--</b></div>
+          <div class="hudChip"><span>BUF</span><b id="buf">--</b></div>
+        </div>
+        <div class="statCol">
+          <div class="hudChip"><span>IDX</span><b id="idx">--</b></div>
+          <div class="hudChip"><span>CRC</span><b id="crc">----</b></div>
+        </div>
+      </div>
+
+      <div class="hudLine" id="line1"></div>
+      <div class="hudLine" id="line2"></div>
+      <div class="hudLine" id="line3"></div>
+
+      <!-- ✅ 波形小框：保留 -->
+      <div id="waveWrap">
+        <svg id="wave" viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg" aria-label="waveform">
+          <path d="M0 15 C10 5, 20 25, 30 15 C40 5, 50 25, 60 15 C70 5, 80 25, 90 15 C100 5, 110 25, 120 15"/>
+        </svg>
+      </div>
+
+      <div id="lockTag">TARGET · LOCK</div>
+      <div id="lockedBadge">LOCKED</div>
+
+      <div id="bigPct">--%</div>
+
+      <div id="hudState">
+        <div id="stateTitle">
+          狀態
+          <strong id="stateStrong">待機</strong>
+        </div>
+        <div id="advice">—</div>
+      </div>
+
+      <div id="nextStep">
+        <div class="k">NEXT STEP</div>
+        <div class="v" id="nextText">—</div>
+      </div>
+
+      <div id="scanLog">
+        <div id="scanDot"></div>
+        <div id="scanMsg">SYSTEM READY · AWAIT INPUT</div>
+      </div>
+    </div>
+
+    <div id="instructionOverlay">
+      <div class="instructionBox">
+        <div class="instructionTitle">SCAN PREP</div>
+        <div class="instructionText">
+          請將鏡頭對準<strong>手掌</strong><br>
+          讓手掌完整落在虛線框內<br>
+          保持不動 2–3 秒後開始掃描。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="bigBtnWrap">
+    <button id="bigBtn" aria-disabled="false">開始掃描</button>
+    <div id="zoneFresh" class="zone" role="button" aria-label="掃描（很有精神）"></div>
+    <div id="zoneOk" class="zone" role="button" aria-label="掃描（有點累但還行）"></div>
+    <div id="zoneOrange" class="zone" role="button" aria-label="掃描（很想睡準備刷牙）"></div>
+    <div id="zoneRed" class="zone" role="button" aria-label="掃描（累爆快睡）"></div>
+  </div>
+
+  <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:10px;">
+    <button id="resetBtn" aria-label="重置">重置</button>
+  </div>
+
+</div>
+
+<script>
+const scanner  = document.getElementById("scanner");
+const bigBtn   = document.getElementById("bigBtn");
+
+const bigPct = document.getElementById("bigPct");
+const modeEl = document.getElementById("mode");
+const sigEl  = document.getElementById("sig");
+const noiEl  = document.getElementById("noi");
+const tempEl = document.getElementById("temp");
+
+const stateStrong = document.getElementById("stateStrong");
+const adviceEl = document.getElementById("advice");
+const nextText = document.getElementById("nextText");
+
+const latEl = document.getElementById("lat");
+const bufEl = document.getElementById("buf");
+const idxEl = document.getElementById("idx");
+const crcEl = document.getElementById("crc");
+
+const overlay = document.getElementById("instructionOverlay");
+const progressBar = document.getElementById("progressBar");
+const scanMsg = document.getElementById("scanMsg");
+
+const meterFill = document.getElementById("meterFill");
+
+const zoneFresh  = document.getElementById("zoneFresh");
+const zoneOk     = document.getElementById("zoneOk");
+const zoneOrange = document.getElementById("zoneOrange");
+const zoneRed    = document.getElementById("zoneRed");
+
+const resetBtn = document.getElementById("resetBtn");
+const scanL = document.getElementById("scanL");
+const scanR = document.getElementById("scanR");
+
+let isScanning = false;
+let hudTimer = null;
+let progressTimer = null;
+let meterTimer = null;
+
+let lastScanAt = 0;
+let isFirstAfterReset = true;
+
+/* 三段式狀態 */
+const phases = [
+  { key:"ALIGN",   dur:0.34, text:"ALIGN · 對準中（保持穩定）" },
+  { key:"ACQUIRE", dur:0.33, text:"ACQUIRE · 取得訊號（正在收集）" },
+  { key:"SOLVE",   dur:0.33, text:"SOLVE · 推論中（快完成了）" }
+];
+
+function randInt(min, max){
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function randHex(){
+  return randInt(4096, 65535).toString(16).toUpperCase();
+}
+function setTheme(theme){
+  document.body.className = theme;
+}
+function setDisabled(disabled){
+  bigBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
+  const pe = disabled ? "none" : "auto";
+  zoneFresh.style.pointerEvents  = pe;
+  zoneOk.style.pointerEvents     = pe;
+  zoneOrange.style.pointerEvents = pe;
+  zoneRed.style.pointerEvents    = pe;
+}
+function setScannerState(scanning, hold){
+  scanner.classList.toggle("scanning", scanning);
+  scanner.classList.toggle("hold", hold);
+}
+function setLocked(show){
+  scanner.classList.toggle("showLocked", show);
+}
+
+/* ✅ 掃描線速度：把動畫 duration 設成 scanTime（整段慢慢掃） */
+function setScanLineDuration(ms){
+  const s = (ms/1000).toFixed(3) + "s";
+  scanL.style.animation = `scanL_slow ${s} linear 1 forwards`;
+  scanR.style.animation = `scanR_slow ${s} linear 1 forwards`;
+}
+
+/* % 彈跳 */
+function animatePercent(toValue){
+  const fromValue = Math.max(0, toValue - randInt(14, 32));
+  const duration = 720;
+  const start = performance.now();
+
+  bigPct.classList.remove("pop");
+  void bigPct.offsetWidth;
+  bigPct.classList.add("pop");
+
+  function tick(now){
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(fromValue + (toValue - fromValue) * eased);
+    bigPct.textContent = current + "%";
+    if(t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* HUD 數字（克制） */
+function startHUD(fast){
+  if(hudTimer) clearInterval(hudTimer);
+  const interval = fast ? 320 : 980;
+  hudTimer = setInterval(() => {
+    sigEl.textContent  = randInt(72, 99);
+    noiEl.textContent  = randInt(3, 18);
+    tempEl.textContent = (Math.random() * (36.9 - 33.0) + 33.0).toFixed(1);
+
+    latEl.textContent  = randInt(6, 22);
+    bufEl.textContent  = randInt(40, 96);
+    idxEl.textContent  = randInt(120, 999);
+    crcEl.textContent  = randHex();
+  }, interval);
+}
+
+/* 進度條 */
+function startProgress(scanTime){
+  if(progressTimer) clearInterval(progressTimer);
+  const start = performance.now();
+  progressBar.style.width = "0%";
+  progressTimer = setInterval(() => {
+    const t = Math.min(1, (performance.now() - start) / scanTime);
+    progressBar.style.width = Math.round(t * 100) + "%";
+    if(t >= 1){
+      clearInterval(progressTimer);
+      progressTimer = null;
+    }
+  }, 60);
+}
+
+/* 疲勞槽 */
+function setMeterFill(percent){
+  const h = Math.max(0, Math.min(92, Math.round(percent * 0.92)));
+  meterFill.style.height = h + "%";
+}
+function startMeterDuringScan(scanTime){
+  if(meterTimer) clearInterval(meterTimer);
+  const start = performance.now();
+  meterTimer = setInterval(() => {
+    const t = Math.min(1, (performance.now() - start) / scanTime);
+    const pseudo = Math.round(74 * t);
+    setMeterFill(pseudo);
+    if(t >= 1){
+      clearInterval(meterTimer);
+      meterTimer = null;
+    }
+  }, 90);
+}
+function stopMeterTimer(){
+  if(meterTimer) clearInterval(meterTimer);
+  meterTimer = null;
+}
+
+/* 溫和完成提示 */
+function feedbackComplete(){
+  try{ navigator.vibrate?.(15); }catch(e){}
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.value = 720;
+    g.gain.value = 0.04;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, 70);
+  }catch(e){}
+}
+
+/* 建議 */
+function adviceFor(mode){
+  if(mode === "fresh")  return "精神不錯｜再玩一下也OK";
+  if(mode === "ok")     return "有點累｜先收尾、慢慢準備";
+  if(mode === "orange") return "很想睡｜刷牙洗臉就上床";
+  return "真的很累｜現在就去睡覺";
+}
+function nextFor(mode){
+  if(mode === "orange") return "刷牙 → 上床 → 讀 1 頁書";
+  if(mode === "red")    return "直接上床 → 關燈 → 深呼吸 3 次";
+  return "—";
+}
+
+/* 區間：綠20–45、紫(取代藍)50–75、橘70–85、紅90–100 */
+function resolveOutcome(mode){
+  const bias = isFirstAfterReset ? 1 : 0;
+
+  if(mode === "fresh"){
+    const fatigue = Math.min(45, randInt(20,45) + randInt(0,bias));
+    return { fatigue, theme:"theme-green", state:"很有精神", advice: adviceFor(mode), next: nextFor(mode) };
+  }
+  if(mode === "ok"){
+    const base = randInt(50,75);
+    const fatigue = Math.min(75, base + randInt(0, bias ? 2 : 1));
+    return { fatigue, theme:"theme-purple", state:"有點累但還行", advice: adviceFor(mode), next: nextFor(mode) };
+  }
+  if(mode === "orange"){
+    let fatigue = randInt(70,85);
+    if(Math.random() < 0.55) fatigue = randInt(78,85);
+    fatigue = Math.min(85, fatigue + randInt(0, bias ? 2 : 1));
+    return { fatigue, theme:"theme-orange", state:"很想睡", advice: adviceFor(mode), next: nextFor(mode) };
+  }
+  let fatigue = randInt(90,100);
+  if(Math.random() < 0.60) fatigue = randInt(94,100);
+  fatigue = Math.min(100, fatigue + randInt(0, bias ? 1 : 0));
+  return { fatigue, theme:"theme-red", state:"累爆", advice: adviceFor(mode), next: nextFor("red") };
+}
+
+/* ✅ 三段式文字 */
+function startPhases(scanTime){
+  const isRescan = (Date.now() - lastScanAt) < 25000;
+  const prefix = isRescan ? "RE-SCAN · " : "";
+
+  function setPhase(i){
+    const p = phases[i];
+    modeEl.textContent = p.key;
+    scanMsg.textContent = prefix + p.text;
+  }
+
+  setPhase(0);
+  const p1 = Math.floor(scanTime * phases[0].dur);
+  const p2 = Math.floor(scanTime * phases[1].dur);
+
+  setTimeout(()=> setPhase(1), p1);
+  setTimeout(()=> setPhase(2), p1 + p2);
+
+  setTimeout(()=>{
+    scanMsg.textContent = prefix + "LOCKING · 讀取完成（鎖定結果）";
+  }, Math.max(0, scanTime - 220));
+}
+
+/* 掃描流程 */
+function startScan(mode){
+  if(isScanning) return;
+  isScanning = true;
+
+  overlay.classList.add("hide");
+  setLocked(false);
+
+  const now = Date.now();
+  lastScanAt = now;
+
+  const scanTime = randInt(5200, 6800);  // 你原本秒數區間附近，偏慢一點點更「真」
+
+  /* ✅ 掃描中：仍是藍色（不切紫） */
+  setTheme("theme-blue");
+
+  setDisabled(true);
+  setScannerState(true, false);
+
+  /* ✅ 掃描線：整段 scanTime 慢慢跑一次（中→外→中→外） */
+  setScanLineDuration(scanTime);
+
+  stateStrong.textContent = "掃描中";
+  adviceEl.textContent = "請保持穩定…";
+  nextText.textContent = "—";
+  bigPct.textContent = "--%";
+  setMeterFill(0);
+
+  startHUD(true);
+  startProgress(scanTime);
+  startMeterDuringScan(scanTime);
+  startPhases(scanTime);
+
+  const out = resolveOutcome(mode);
+
+  setTimeout(() => {
+    setScannerState(false, true);
+    stopMeterTimer();
+    startHUD(false);
+
+    setLocked(true);
+    modeEl.textContent = "LOCKED";
+    stateStrong.textContent = out.state;
+    adviceEl.textContent = out.advice;
+    nextText.textContent = out.next;
+
+    bigPct.textContent = "--%";
+    scanMsg.textContent = "LOCKED · RESULT READY";
+
+    /* ✅ 先切到結果主題（紫/綠/橘/紅），0.3秒後才跳% */
+    setTheme(out.theme);
+
+    setTimeout(() => {
+      animatePercent(out.fatigue);
+      setMeterFill(out.fatigue);
+      scanMsg.textContent = "COMPLETE · RESULT CONFIRMED";
+      feedbackComplete();
+
+      isFirstAfterReset = false;
+      isScanning = false;
+      setDisabled(false);
+    }, 300);
+
+  }, scanTime);
+}
+
+/* 分區 */
+zoneFresh.addEventListener("click",  () => startScan("fresh"));
+zoneOk.addEventListener("click",     () => startScan("ok"));
+zoneOrange.addEventListener("click", () => startScan("orange"));
+zoneRed.addEventListener("click",    () => startScan("red"));
+
+/* 大按鈕：走橘（最常用） */
+bigBtn.addEventListener("click", () => {
+  if(bigBtn.getAttribute("aria-disabled") === "true") return;
+  startScan("orange");
+});
+
+/* 重置 */
+function resetScanner(){
+  if(hudTimer) clearInterval(hudTimer);
+  if(progressTimer) clearInterval(progressTimer);
+  if(meterTimer) clearInterval(meterTimer);
+  hudTimer = progressTimer = meterTimer = null;
+
+  isScanning = false;
+
+  setTheme("theme-blue");
+  setScannerState(false, false);
+  setLocked(false);
+  setDisabled(false);
+
+  bigPct.textContent = "--%";
+  stateStrong.textContent = "待機";
+  adviceEl.textContent = "—";
+  nextText.textContent = "—";
+  modeEl.textContent = "IDLE";
+
+  scanMsg.textContent = "SYSTEM READY · AWAIT INPUT";
+  progressBar.style.width = "0%";
+  setMeterFill(0);
+
+  overlay.classList.remove("hide");
+
+  isFirstAfterReset = true;
+  startHUD(false);
+}
+resetBtn.addEventListener("click", resetScanner);
+
+/* 初始 */
+startHUD(false);
+setMeterFill(0);
+</script>
+
+</body>
+</html>
